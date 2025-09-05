@@ -10,7 +10,6 @@
     interactiveSelector: "a, button, input, textarea, select, video, audio",
     hasDeconstructedForEditMode: false,
     contentFill: false,
-    storageKey: "wm-scroll-away-hero-dismissed",
     preventHideWhileInputFocused: true,
     headerSelector: "#header",
   };
@@ -26,7 +25,6 @@
     localSettings.preventHideOnInteractiveClick = String(ds.preventHideOnInteractiveClick).toLowerCase() === "true";
   if (ds.interactiveSelector) localSettings.interactiveSelector = ds.interactiveSelector;
   if (ds.contentFill != null && ds.contentFill !== "") localSettings.contentFill = String(ds.contentFill).toLowerCase() === "true";
-  if (ds.storageKey) localSettings.storageKey = ds.storageKey;
   if (ds.preventHideWhileInputFocused != null && ds.preventHideWhileInputFocused !== "") localSettings.preventHideWhileInputFocused = String(ds.preventHideWhileInputFocused).toLowerCase() === "true";
   if (ds.headerSelector) localSettings.headerSelector = ds.headerSelector;
 
@@ -65,21 +63,6 @@
   }
 
   const threshold = Number(config.threshold) || defaults.threshold;
-  const getIsDismissed = () => {
-    try {
-      return window.localStorage.getItem(String(config.storageKey)) === "1";
-    } catch (e) {
-      return false;
-    }
-  };
-
-  const setDismissed = () => {
-    try {
-      window.localStorage.setItem(String(config.storageKey), "1");
-    } catch (e) {
-      // ignore storage errors
-    }
-  };
 
   const show = () => {
     heroSection.classList.remove("wm-scroll-away-hero-section--hidden");
@@ -87,11 +70,6 @@
 
   const hide = () => {
     heroSection.classList.add("wm-scroll-away-hero-section--hidden");
-  };
-
-  const dismiss = () => {
-    setDismissed();
-    hide();
   };
 
   const isInputFocused = () => {
@@ -102,20 +80,7 @@
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   };
 
-  const resetDismissal = () => {
-    try {
-      window.localStorage.removeItem(String(config.storageKey));
-    } catch (e) {
-      // ignore storage errors
-    }
-    updateVisibility();
-  };
-
   const updateVisibility = () => {
-    if (getIsDismissed()) {
-      hide();
-      return;
-    }
     if (config.preventHideWhileInputFocused && isInputFocused()) {
       show();
       return;
@@ -164,7 +129,5 @@
     show,
     hide,
     updateVisibility,
-    dismiss,
-    resetDismissal,
   };
 })();
