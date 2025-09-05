@@ -1,5 +1,5 @@
 (function () {
-  const el = document.querySelector('[data-wm-plugin="scroll-away-hero-card"]');
+  const el = document.querySelector('[data-wm-plugin="scroll-away-hero-section"]');
   if (!el) return;
 
   const defaults = {
@@ -11,6 +11,8 @@
     hasDeconstructedForEditMode: false,
     contentFill: false,
     storageKey: "wm-scroll-away-hero-dismissed",
+    preventHideWhileInputFocused: true,
+    headerSelector: "#header",
   };
 
   const globalSettings = window.wmScrollAwayHeroSettings || {};
@@ -25,6 +27,8 @@
   if (ds.interactiveSelector) localSettings.interactiveSelector = ds.interactiveSelector;
   if (ds.contentFill != null && ds.contentFill !== "") localSettings.contentFill = String(ds.contentFill).toLowerCase() === "true";
   if (ds.storageKey) localSettings.storageKey = ds.storageKey;
+  if (ds.preventHideWhileInputFocused != null && ds.preventHideWhileInputFocused !== "") localSettings.preventHideWhileInputFocused = String(ds.preventHideWhileInputFocused).toLowerCase() === "true";
+  if (ds.headerSelector) localSettings.headerSelector = ds.headerSelector;
 
   const config = Object.assign({}, defaults, globalSettings, localSettings);
 
@@ -34,16 +38,31 @@
     window.wmScrollAwayHero.hasDeconstructedForEditMode = !!config.hasDeconstructedForEditMode;
   }
 
-  const heroCard = document.querySelector(config.heroSelector);
-  if (!heroCard) return;
+  const heroSection = document.querySelector(config.heroSelector);
+  if (!heroSection) return;
 
   const page = document.querySelector("#page");
   if (!page) return;
 
-  heroCard.classList.add("wm-scroll-away-hero-card");
-  console.log(config.contentFill);
-  if (config.contentFill) heroCard.classList.add("content-fill");
-  page.append(heroCard);
+  heroSection.classList.add("wm-scroll-away-hero-section");
+  if (config.contentFill) heroSection.classList.add("content-fill");
+  page.append(heroSection);
+
+  const updateHeaderHeightVar = () => {
+    const headerEl = document.querySelector(config.headerSelector);
+    const headerHeight = headerEl ? headerEl.offsetHeight : 0;
+    heroSection.style.setProperty("--wm-scroll-away-hero-header-height", headerHeight + "px");
+  };
+  updateHeaderHeightVar();
+  window.addEventListener("resize", updateHeaderHeightVar, { passive: true });
+  window.addEventListener("load", updateHeaderHeightVar, { passive: true });
+  const headerElForObserve = document.querySelector(config.headerSelector);
+  if (headerElForObserve && window.ResizeObserver) {
+    try {
+      const ro = new ResizeObserver(updateHeaderHeightVar);
+      ro.observe(headerElForObserve);
+    } catch (e) {}
+  }
 
   const threshold = Number(config.threshold) || defaults.threshold;
   const getIsDismissed = () => {
@@ -63,16 +82,24 @@
   };
 
   const show = () => {
-    heroCard.classList.remove("wm-scroll-away-hero-card--hidden");
+    heroSection.classList.remove("wm-scroll-away-hero-section--hidden");
   };
 
   const hide = () => {
-    heroCard.classList.add("wm-scroll-away-hero-card--hidden");
+    heroSection.classList.add("wm-scroll-away-hero-section--hidden");
   };
 
   const dismiss = () => {
     setDismissed();
     hide();
+  };
+
+  const isInputFocused = () => {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    if (ae.isContentEditable) return true;
+    const tag = ae.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   };
 
   const resetDismissal = () => {
@@ -89,6 +116,10 @@
       hide();
       return;
     }
+    if (config.preventHideWhileInputFocused && isInputFocused()) {
+      show();
+      return;
+    }
     if (window.scrollY > threshold) hide();
     else show();
   };
@@ -97,7 +128,7 @@
   window.addEventListener("scroll", updateVisibility, {passive: true});
 
   if (config.hideOnSectionClick) {
-    heroCard.addEventListener("click", function (e) {
+    heroSection.addEventListener("click", function (e) {
       if (config.preventHideOnInteractiveClick && e.target && typeof e.target.closest === "function") {
         if (e.target.closest(config.interactiveSelector)) return;
       }
@@ -115,7 +146,7 @@
         if (classList.contains("sqs-is-page-editing")) {
           if (!wmScrollAwayHero.hasDeconstructedForEditMode) {
             wmScrollAwayHero.hasDeconstructedForEditMode = true;
-            heroCard.remove();
+            heroSection.remove();
             bodyObserver.disconnect();
           }
         }
