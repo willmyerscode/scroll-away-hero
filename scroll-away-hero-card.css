@@ -1,0 +1,26 @@
+
+
+section.wm-scroll-away-hero-card.page-section{
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--transition-duration, 300ms) ease, transform var(--transition-duration, 300ms) ease, z-index 0s ease 0ms;
+  pointer-events: auto;
+}
+
+section.wm-scroll-away-hero-card.page-section.wm-scroll-away-hero-card--hidden{
+  opacity: 0;
+  transform: translateY(var(--translate-y, -96px));
+  transition: opacity var(--transition-duration, 300ms) ease, transform var(--transition-duration, 300ms) ease, z-index 0s ease var(--transition-duration, 300ms);
+  z-index: -1;
+  pointer-events: none;
+}
+
+section.wm-scroll-away-hero-card.page-section.content-fill .fluid-engine{
+  height: 100dvh;
+}
