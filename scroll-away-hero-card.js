@@ -7,9 +7,10 @@
     heroSelector: "#sections > section:last-child",
     hideOnSectionClick: true,
     preventHideOnInteractiveClick: true,
-    interactiveSelector: "a, button",
+    interactiveSelector: "a, button, input, textarea, select, video, audio",
     hasDeconstructedForEditMode: false,
     contentFill: false,
+    storageKey: "wm-scroll-away-hero-dismissed",
   };
 
   const globalSettings = window.wmScrollAwayHeroSettings || {};
@@ -23,8 +24,15 @@
     localSettings.preventHideOnInteractiveClick = String(ds.preventHideOnInteractiveClick).toLowerCase() === "true";
   if (ds.interactiveSelector) localSettings.interactiveSelector = ds.interactiveSelector;
   if (ds.contentFill != null && ds.contentFill !== "") localSettings.contentFill = String(ds.contentFill).toLowerCase() === "true";
+  if (ds.storageKey) localSettings.storageKey = ds.storageKey;
 
   const config = Object.assign({}, defaults, globalSettings, localSettings);
+
+  // Ensure global namespace exists early for downstream references
+  window.wmScrollAwayHero = window.wmScrollAwayHero || {};
+  if (window.wmScrollAwayHero.hasDeconstructedForEditMode == null) {
+    window.wmScrollAwayHero.hasDeconstructedForEditMode = !!config.hasDeconstructedForEditMode;
+  }
 
   const heroCard = document.querySelector(config.heroSelector);
   if (!heroCard) return;
@@ -38,6 +46,22 @@
   page.append(heroCard);
 
   const threshold = Number(config.threshold) || defaults.threshold;
+  const getIsDismissed = () => {
+    try {
+      return window.localStorage.getItem(String(config.storageKey)) === "1";
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const setDismissed = () => {
+    try {
+      window.localStorage.setItem(String(config.storageKey), "1");
+    } catch (e) {
+      // ignore storage errors
+    }
+  };
+
   const show = () => {
     heroCard.classList.remove("wm-scroll-away-hero-card--hidden");
   };
@@ -46,7 +70,25 @@
     heroCard.classList.add("wm-scroll-away-hero-card--hidden");
   };
 
+  const dismiss = () => {
+    setDismissed();
+    hide();
+  };
+
+  const resetDismissal = () => {
+    try {
+      window.localStorage.removeItem(String(config.storageKey));
+    } catch (e) {
+      // ignore storage errors
+    }
+    updateVisibility();
+  };
+
   const updateVisibility = () => {
+    if (getIsDismissed()) {
+      hide();
+      return;
+    }
     if (window.scrollY > threshold) hide();
     else show();
   };
@@ -91,5 +133,7 @@
     show,
     hide,
     updateVisibility,
+    dismiss,
+    resetDismissal,
   };
 })();
