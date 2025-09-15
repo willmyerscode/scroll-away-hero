@@ -12,6 +12,7 @@
     contentFill: false,
     preventHideWhileInputFocused: true,
     headerSelector: "#header",
+    syncHeaderTheme: true,
   };
 
   const globalSettings = window.wmScrollAwayHeroSettings || {};
@@ -27,6 +28,7 @@
   if (ds.contentFill != null && ds.contentFill !== "") localSettings.contentFill = String(ds.contentFill).toLowerCase() === "true";
   if (ds.preventHideWhileInputFocused != null && ds.preventHideWhileInputFocused !== "") localSettings.preventHideWhileInputFocused = String(ds.preventHideWhileInputFocused).toLowerCase() === "true";
   if (ds.headerSelector) localSettings.headerSelector = ds.headerSelector;
+  if (ds.syncHeaderTheme != null && ds.syncHeaderTheme !== "") localSettings.syncHeaderTheme = String(ds.syncHeaderTheme).toLowerCase() === "true";
 
   const config = Object.assign({}, defaults, globalSettings, localSettings);
 
@@ -45,6 +47,18 @@
   heroSection.classList.add("wm-scroll-away-hero-section");
   if (config.contentFill) heroSection.classList.add("content-fill");
   page.append(heroSection);
+
+  // Header theme handling
+  const headerEl = document.querySelector(config.headerSelector);
+  const initialHeaderTheme = headerEl ? headerEl.getAttribute("data-section-theme") : null;
+  const heroTheme = heroSection.getAttribute("data-section-theme");
+  const applyHeaderTheme = (isHeroActive) => {
+    if (!config.syncHeaderTheme) return;
+    if (!headerEl || document.body.classList.contains("sqs-edit-mode-active")) return;
+    const desiredTheme = isHeroActive ? (heroTheme || initialHeaderTheme) : initialHeaderTheme;
+    if (desiredTheme == null || desiredTheme === "") headerEl.removeAttribute("data-section-theme");
+    else headerEl.setAttribute("data-section-theme", desiredTheme);
+  };
 
   const updateHeaderHeightVar = () => {
     const headerEl = document.querySelector(config.headerSelector);
@@ -66,10 +80,12 @@
 
   const show = () => {
     heroSection.classList.remove("wm-scroll-away-hero-section--hidden");
+    applyHeaderTheme(true);
   };
 
   const hide = () => {
     heroSection.classList.add("wm-scroll-away-hero-section--hidden");
+    applyHeaderTheme(false);
   };
 
   const isInputFocused = () => {
