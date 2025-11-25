@@ -1,28 +1,126 @@
-section.wm-scroll-away-hero-section.page-section[data-section-id]{
-  position: fixed !important;
+/* Base hero section styles */
+section.wm-scroll-away-hero-section.page-section[data-section-id],
+section.wm-scroll-away-hero-section.wm-scroll-away-hero-section--generated {
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  min-height: 100vh;
-  z-index: 9;
+  width: 100%;
+  height: 100dvh;
+  z-index: 999;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
   opacity: 1;
-  transform: translateY(0);
-  transition: opacity var(--transition-duration, 300ms) ease var(--transition-duration, 300ms), transform var(--transition-duration, 300ms) ease, z-index 0s ease 0ms;
-  pointer-events: auto;
+  visibility: visible;
 }
 
-section.wm-scroll-away-hero-section.page-section[data-section-id].wm-scroll-away-hero-section--hidden{
+/* Hidden state */
+section.wm-scroll-away-hero-section.page-section[data-section-id].wm-scroll-away-hero-section--hidden,
+section.wm-scroll-away-hero-section.wm-scroll-away-hero-section--generated.wm-scroll-away-hero-section--hidden {
   opacity: 0;
-  transform: translateY(var(--translate-y, -96px));
-  transition: opacity var(--transition-duration, 300ms) ease 0ms, transform var(--transition-duration, 300ms) ease, z-index 0s ease var(--transition-duration, 300ms);
-  z-index: -1;
+  visibility: hidden;
   pointer-events: none;
 }
 
-section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine{
+/* Content fill option for existing sections */
+section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
   height: 100dvh;
 }
 
-.wm-scroll-away-hero-section{
-  --translate-y: 0px;
+/* Scroll margin for existing sections */
+.wm-scroll-away-hero-section {
+  scroll-margin-top: var(--wm-scroll-away-hero-header-height, 0px);
 }
+
+/* ============================================
+   Generated Hero Section Styles
+   ============================================ */
+
+.wm-scroll-away-hero-section--generated {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wm-scroll-away-hero-bg, var(--sectionThemePrimaryButtonBackgroundColor, #000));
+  color: var(--wm-scroll-away-hero-color, var(--sectionThemePrimaryButtonTextColor, #fff));
+}
+
+/* Content wrapper - stacks items vertically, centered */
+.wm-scroll-away-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--wm-scroll-away-hero-gap, 1.5rem);
+  padding: var(--wm-scroll-away-hero-padding, 2rem);
+  max-width: 90vw;
+  box-sizing: border-box;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* Loading state - container visible, content hidden */
+.wm-scroll-away-hero-section--loading .wm-scroll-away-hero-content {
+  opacity: 0;
+}
+
+/* Loaded state - fade in content */
+.wm-scroll-away-hero-section--loaded .wm-scroll-away-hero-content {
+  opacity: 1;
+}
+
+/* Title styles */
+.wm-scroll-away-hero-title,
+.wm-scroll-away-hero-seo-title,
+.wm-scroll-away-hero-site-title {
+  margin: 0;
+  font-size: var(--wm-scroll-away-hero-title-size, clamp(2rem, 5vw, 4rem));
+  font-weight: var(--wm-scroll-away-hero-title-weight, 700);
+  line-height: 1.2;
+  max-width: 100%;
+}
+
+/* Excerpt/description styles */
+.wm-scroll-away-hero-excerpt,
+.wm-scroll-away-hero-seo-description,
+.wm-scroll-away-hero-site-description {
+  font-size: var(--wm-scroll-away-hero-text-size, clamp(1rem, 2vw, 1.25rem));
+  line-height: 1.6;
+  max-width: min(800px, 100%);
+}
+
+/* Clean up any nested paragraph margins from HTML content */
+.wm-scroll-away-hero-excerpt > *:first-child,
+.wm-scroll-away-hero-seo-description > *:first-child,
+.wm-scroll-away-hero-site-description > *:first-child {
+  margin-top: 0;
+}
+
+.wm-scroll-away-hero-excerpt > *:last-child,
+.wm-scroll-away-hero-seo-description > *:last-child,
+.wm-scroll-away-hero-site-description > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Thumbnail image styles - centered, uncropped */
+.wm-scroll-away-hero-thumbnail {
+  max-width: min(800px, 100%);
+  max-height: 80vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ============================================
+   CSS Custom Properties Reference
+   ============================================
+   
+   --wm-scroll-away-hero-bg: Background color for generated hero
+   --wm-scroll-away-hero-color: Text color for generated hero
+   --wm-scroll-away-hero-gap: Gap between stacked content items
+   --wm-scroll-away-hero-padding: Padding around content
+   --wm-scroll-away-hero-title-size: Title font size
+   --wm-scroll-away-hero-title-weight: Title font weight
+   --wm-scroll-away-hero-text-size: Body text font size
+   --wm-scroll-away-hero-header-height: (Set by JS) Header height for scroll margin
+   
+   ============================================ */
