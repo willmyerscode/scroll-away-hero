@@ -4,7 +4,6 @@
 
   const defaults = {
     threshold: 1,
-    heroSelector: "#sections > section:last-child",
     hideOnSectionClick: true,
     preventHideOnInteractiveClick: true,
     interactiveSelector: "a, button, input, textarea, select, video, audio",
@@ -20,7 +19,6 @@
   const ds = el.dataset || {};
   const localSettings = {};
   if (ds.threshold != null && ds.threshold !== "") localSettings.threshold = Number(ds.threshold);
-  if (ds.heroSelector) localSettings.heroSelector = ds.heroSelector;
   if (ds.hideOnSectionClick != null && ds.hideOnSectionClick !== "") localSettings.hideOnSectionClick = String(ds.hideOnSectionClick).toLowerCase() === "true";
   if (ds.preventHideOnInteractiveClick != null && ds.preventHideOnInteractiveClick !== "")
     localSettings.preventHideOnInteractiveClick = String(ds.preventHideOnInteractiveClick).toLowerCase() === "true";
@@ -38,11 +36,64 @@
     window.wmScrollAwayHero.hasDeconstructedForEditMode = !!config.hasDeconstructedForEditMode;
   }
 
-  const heroSection = document.querySelector(config.heroSelector);
-  if (!heroSection) return;
-
   const page = document.querySelector("#page");
   if (!page) return;
+
+  // Preset selectors mapping
+  const presetSelectors = {
+    "last-section": "#sections > section:last-child",
+    "first-section": "#sections > section:first-child",
+  };
+
+  // Check if a string is a CSS selector
+  const isSelector = (str) => {
+    const trimmed = str.trim();
+    return trimmed.startsWith("#") || trimmed.startsWith(".") || trimmed.startsWith("[");
+  };
+
+  // Parse the data-hero-section attribute
+  const parseHeroSectionAttr = (attr) => {
+    if (!attr) return null;
+    return attr.split(",").map((s) => s.trim()).filter(Boolean);
+  };
+
+  const heroSectionAttr = ds.heroSection;
+  let contentKeywords = parseHeroSectionAttr(heroSectionAttr);
+
+  // Check if using a selector (sync path) or keywords (async path)
+  let selectorKeyword = null;
+  if (contentKeywords) {
+    selectorKeyword = contentKeywords.find((kw) => {
+      return presetSelectors[kw] || isSelector(kw);
+    });
+  }
+
+  let heroSection = null;
+  let isGeneratedSection = false;
+  let contentWrapper = null;
+  let originalParent = null;
+  let originalNextSibling = null;
+
+  if (selectorKeyword) {
+    // SYNC PATH: Use existing section from page
+    const selector = presetSelectors[selectorKeyword] || selectorKeyword;
+    heroSection = document.querySelector(selector);
+    if (!heroSection) return; // Section not found, don't initialize
+    
+    // Store original position for restoring in edit mode
+    originalParent = heroSection.parentElement;
+    originalNextSibling = heroSection.nextElementSibling;
+  } else {
+    // ASYNC PATH: Create placeholder hero section immediately (optimistic loading)
+    heroSection = document.createElement("section");
+    heroSection.className = "wm-scroll-away-hero-section wm-scroll-away-hero-section--generated wm-scroll-away-hero-section--loading page-section";
+
+    contentWrapper = document.createElement("div");
+    contentWrapper.className = "wm-scroll-away-hero-content";
+
+    heroSection.appendChild(contentWrapper);
+    isGeneratedSection = true;
+  }
 
   heroSection.classList.add("wm-scroll-away-hero-section");
   if (config.contentFill) heroSection.classList.add("content-fill");
@@ -106,7 +157,7 @@
   };
 
   updateVisibility();
-  window.addEventListener("scroll", updateVisibility, {passive: true});
+  window.addEventListener("scroll", updateVisibility, { passive: true });
 
   if (config.hideOnSectionClick) {
     heroSection.addEventListener("click", function (e) {
@@ -120,14 +171,29 @@
   const isBackend = window.self !== window.top;
 
   // Observe changes to the body's class attribute
-  const bodyObserver = new MutationObserver(async mutations => {
+  const bodyObserver = new MutationObserver(async (mutations) => {
     for (const mutation of mutations) {
       if (mutation.attributeName === "class") {
         const classList = document.body.classList;
         if (classList.contains("sqs-is-page-editing")) {
           if (!wmScrollAwayHero.hasDeconstructedForEditMode) {
             wmScrollAwayHero.hasDeconstructedForEditMode = true;
-            heroSection.remove();
+            
+            if (isGeneratedSection) {
+              // Generated sections can just be removed
+              heroSection.remove();
+            } else if (originalParent) {
+              // Selector-based sections need to be restored to original position
+              heroSection.classList.remove("wm-scroll-away-hero-section", "wm-scroll-away-hero-section--hidden", "content-fill");
+              heroSection.style.removeProperty("--wm-scroll-away-hero-header-height");
+              
+              if (originalNextSibling) {
+                originalParent.insertBefore(heroSection, originalNextSibling);
+              } else {
+                originalParent.appendChild(heroSection);
+              }
+            }
+            
             bodyObserver.disconnect();
           }
         }
@@ -145,5 +211,172 @@
     show,
     hide,
     updateVisibility,
+    heroSection,
+    isGeneratedSection,
   };
+
+  // If using selector, we're done (sync path complete)
+  if (!isGeneratedSection) return;
+
+  // ASYNC PATH: Fetch data and inject content
+  (async function () {
+    // Fetch page JSON data
+    const fetchPageData = async () => {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("format", "json");
+        const response = await fetch(url.toString());
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (e) {
+        console.warn("scroll-away-hero-section: Could not fetch page JSON", e);
+        return null;
+      }
+    };
+
+    // Determine page type from JSON data
+    const getPageType = (data) => {
+      if (!data) return null;
+      if (data.item) {
+        const recordTypeLabel = data.item.recordTypeLabel;
+        if (recordTypeLabel === "text") return "blog-item";
+        if (recordTypeLabel === "portfolio-item") return "portfolio-item";
+        return "item";
+      }
+      if (data.collection) {
+        const typeName = data.collection.typeName || "";
+        if (typeName.includes("blog")) return "blog-collection";
+        if (typeName.includes("portfolio")) return "portfolio-collection";
+        return "collection";
+      }
+      return "page";
+    };
+
+    // Get content by keyword from JSON data
+    const getContentByKeyword = (keyword, data, pageType) => {
+      if (!data) return null;
+
+      const isItemPage = pageType && pageType.endsWith("-item");
+
+      switch (keyword) {
+        case "title":
+          if (isItemPage && data.item?.title) return { type: "title", value: data.item.title };
+          if (data.collection?.title) return { type: "title", value: data.collection.title };
+          return null;
+
+        case "excerpt":
+          if (isItemPage && data.item?.excerpt) return { type: "excerpt", value: data.item.excerpt };
+          if (!isItemPage && data.collection?.description) return { type: "excerpt", value: data.collection.description };
+          return null;
+
+        case "seo-title":
+          if (data.collection?.seoData?.seoTitle) return { type: "seo-title", value: data.collection.seoData.seoTitle };
+          return null;
+
+        case "seo-description":
+          if (data.collection?.seoData?.seoDescription) return { type: "seo-description", value: data.collection.seoData.seoDescription };
+          return null;
+
+        case "thumbnail":
+          if (isItemPage && data.item?.assetUrl) return { type: "thumbnail", value: data.item.assetUrl };
+          return null;
+
+        case "site-title":
+          if (data.website?.siteTitle) return { type: "site-title", value: data.website.siteTitle };
+          return null;
+
+        case "site-description":
+          if (data.website?.siteDescription) return { type: "site-description", value: data.website.siteDescription };
+          return null;
+
+        default:
+          return null;
+      }
+    };
+
+    // Create HTML element for content item
+    const createContentElement = (content) => {
+      if (!content || !content.value) return null;
+
+      switch (content.type) {
+        case "title":
+        case "seo-title":
+        case "site-title": {
+          const h1 = document.createElement("h1");
+          h1.className = `wm-scroll-away-hero-${content.type}`;
+          h1.textContent = content.value;
+          return h1;
+        }
+
+        case "excerpt":
+        case "seo-description":
+        case "site-description": {
+          const div = document.createElement("div");
+          div.className = `wm-scroll-away-hero-${content.type}`;
+          div.innerHTML = content.value;
+          return div;
+        }
+
+        case "thumbnail": {
+          const img = document.createElement("img");
+          img.className = "wm-scroll-away-hero-thumbnail";
+          img.src = content.value;
+          img.alt = "";
+          img.loading = "eager";
+          return img;
+        }
+
+        default:
+          return null;
+      }
+    };
+
+    // Get default content keywords based on page type
+    const getDefaultKeywords = (pageType) => {
+      switch (pageType) {
+        case "blog-item":
+          return ["excerpt"];
+        case "portfolio-item":
+          return ["thumbnail"];
+        default:
+          return null;
+      }
+    };
+
+    const pageData = await fetchPageData();
+    const pageType = getPageType(pageData);
+
+    // If no attribute specified, use defaults based on page type
+    if (!contentKeywords) {
+      contentKeywords = getDefaultKeywords(pageType);
+      if (!contentKeywords) {
+        // No content to show, remove the placeholder
+        heroSection.remove();
+        return;
+      }
+    }
+
+    // Build content items
+    const contentItems = [];
+    for (const keyword of contentKeywords) {
+      const content = getContentByKeyword(keyword, pageData, pageType);
+      if (content) contentItems.push(content);
+    }
+
+    if (contentItems.length === 0) {
+      // No content found, remove the placeholder
+      heroSection.remove();
+      return;
+    }
+
+    // Inject content elements
+    for (const content of contentItems) {
+      const element = createContentElement(content);
+      if (element) contentWrapper.appendChild(element);
+    }
+
+    // Remove loading state and trigger fade-in
+    heroSection.classList.remove("wm-scroll-away-hero-section--loading");
+    heroSection.classList.add("wm-scroll-away-hero-section--loaded");
+  })();
 })();
