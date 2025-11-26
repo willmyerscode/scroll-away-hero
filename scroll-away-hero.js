@@ -12,6 +12,11 @@
     preventHideWhileInputFocused: true,
     headerSelector: "#header",
     syncHeaderTheme: true,
+    allowOnCollection: false,
+    titleTagName: "h1",
+    sectionTheme: null, // null = inherit from header, or set custom theme
+    showIcon: true,
+    iconHtml: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
   };
 
   const globalSettings = window.wmScrollAwayHeroSettings || {};
@@ -27,6 +32,15 @@
   if (ds.preventHideWhileInputFocused != null && ds.preventHideWhileInputFocused !== "") localSettings.preventHideWhileInputFocused = String(ds.preventHideWhileInputFocused).toLowerCase() === "true";
   if (ds.headerSelector) localSettings.headerSelector = ds.headerSelector;
   if (ds.syncHeaderTheme != null && ds.syncHeaderTheme !== "") localSettings.syncHeaderTheme = String(ds.syncHeaderTheme).toLowerCase() === "true";
+  if (ds.allowOnCollection != null && ds.allowOnCollection !== "") localSettings.allowOnCollection = String(ds.allowOnCollection).toLowerCase() === "true";
+  if (ds.titleTagName) {
+    const validTags = ["h1", "h2", "h3", "h4"];
+    const tagName = ds.titleTagName.toLowerCase();
+    if (validTags.includes(tagName)) localSettings.titleTagName = tagName;
+  }
+  if (ds.sectionTheme != null && ds.sectionTheme !== "") localSettings.sectionTheme = ds.sectionTheme;
+  if (ds.showIcon != null && ds.showIcon !== "") localSettings.showIcon = String(ds.showIcon).toLowerCase() === "true";
+  if (ds.iconHtml != null && ds.iconHtml !== "") localSettings.iconHtml = ds.iconHtml;
 
   const config = Object.assign({}, defaults, globalSettings, localSettings);
 
@@ -102,6 +116,13 @@
   // Header theme handling
   const headerEl = document.querySelector(config.headerSelector);
   const initialHeaderTheme = headerEl ? headerEl.getAttribute("data-section-theme") : null;
+  
+  // Set section theme on generated sections
+  if (isGeneratedSection) {
+    const themeToApply = config.sectionTheme != null ? config.sectionTheme : initialHeaderTheme;
+    if (themeToApply) heroSection.setAttribute("data-section-theme", themeToApply);
+  }
+  
   const heroTheme = heroSection.getAttribute("data-section-theme");
   const applyHeaderTheme = (isHeroActive) => {
     if (!config.syncHeaderTheme) return;
@@ -302,10 +323,10 @@
         case "title":
         case "seo-title":
         case "site-title": {
-          const h1 = document.createElement("h1");
-          h1.className = `wm-scroll-away-hero-${content.type}`;
-          h1.textContent = content.value;
-          return h1;
+          const heading = document.createElement(config.titleTagName);
+          heading.className = `wm-scroll-away-hero-${content.type}`;
+          heading.textContent = content.value;
+          return heading;
         }
 
         case "excerpt":
@@ -346,6 +367,13 @@
     const pageData = await fetchPageData();
     const pageType = getPageType(pageData);
 
+    // Prevent activation on collection pages unless explicitly allowed
+    const isCollectionPage = pageType === "blog-collection" || pageType === "portfolio-collection";
+    if (isCollectionPage && !config.allowOnCollection) {
+      heroSection.remove();
+      return;
+    }
+
     // If no attribute specified, use defaults based on page type
     if (!contentKeywords) {
       contentKeywords = getDefaultKeywords(pageType);
@@ -373,6 +401,14 @@
     for (const content of contentItems) {
       const element = createContentElement(content);
       if (element) contentWrapper.appendChild(element);
+    }
+
+    // Add icon as last element if enabled
+    if (config.showIcon && config.iconHtml) {
+      const iconWrapper = document.createElement("div");
+      iconWrapper.className = "wm-scroll-away-hero-icon";
+      iconWrapper.innerHTML = config.iconHtml;
+      contentWrapper.appendChild(iconWrapper);
     }
 
     // Remove loading state and trigger fade-in
