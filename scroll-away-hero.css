@@ -38,8 +38,8 @@ section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--wm-scroll-away-hero-bg, var(--sectionThemePrimaryButtonBackgroundColor, #000));
-  color: var(--wm-scroll-away-hero-color, var(--sectionThemePrimaryButtonTextColor, #fff));
+  background: var(--wm-scroll-away-hero-bg, var(--siteBackgroundColor, hsla(var(--darkAccent-hsl), 1)));
+  color: var(--wm-scroll-away-hero-color, var(--paragraphLargeColor, hsla(var(--white-hsl), 1)));
 }
 
 /* Content wrapper - stacks items vertically, centered */
@@ -47,11 +47,13 @@ section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  overflow-y: auto;
   text-align: center;
   gap: var(--wm-scroll-away-hero-gap, 1.5rem);
-  padding: var(--wm-scroll-away-hero-padding, 2rem);
+  padding: var(--wm-scroll-away-hero-header-height) var(--wm-scroll-away-hero-padding, 2rem);
   max-width: 90vw;
+  max-height: 100dvh;
   box-sizing: border-box;
   opacity: 0;
   transition: opacity 0.4s ease;
@@ -76,6 +78,7 @@ section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
   font-weight: var(--wm-scroll-away-hero-title-weight, 700);
   line-height: 1.2;
   max-width: 100%;
+  color: var(--wm-scroll-away-hero-title-color, var(--headingExtraLargeColor, inherit));
 }
 
 /* Excerpt/description styles */
@@ -84,7 +87,8 @@ section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
 .wm-scroll-away-hero-site-description {
   font-size: var(--wm-scroll-away-hero-text-size, clamp(1rem, 2vw, 1.25rem));
   line-height: 1.6;
-  max-width: min(800px, 100%);
+  max-width: min(700px, 100%);
+  color: var(--wm-scroll-away-hero-text-color, var(--paragraphMediumColor, inherit));
 }
 
 /* Clean up any nested paragraph margins from HTML content */
@@ -102,25 +106,44 @@ section.wm-scroll-away-hero-section.page-section.content-fill .fluid-engine {
 
 /* Thumbnail image styles - centered, uncropped */
 .wm-scroll-away-hero-thumbnail {
-  max-width: min(800px, 100%);
-  max-height: 80vh;
+  max-width: min(700px, 100%);
+  max-height: 60vh;
   width: auto;
   height: auto;
   object-fit: contain;
   display: block;
 }
 
+/* Icon styles */
+.wm-scroll-away-hero-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: var(--wm-scroll-away-hero-gap, 0px);
+  color: var(--wm-scroll-away-hero-icon-color, var(--paragraphMediumColor, currentColor));
+}
+
+.wm-scroll-away-hero-icon svg {
+  width: var(--wm-scroll-away-hero-icon-size, 32px);
+  height: var(--wm-scroll-away-hero-icon-size, 32px);
+}
+
 /* ============================================
    CSS Custom Properties Reference
    ============================================
    
-   --wm-scroll-away-hero-bg: Background color for generated hero
-   --wm-scroll-away-hero-color: Text color for generated hero
-   --wm-scroll-away-hero-gap: Gap between stacked content items
-   --wm-scroll-away-hero-padding: Padding around content
-   --wm-scroll-away-hero-title-size: Title font size
-   --wm-scroll-away-hero-title-weight: Title font weight
-   --wm-scroll-away-hero-text-size: Body text font size
+   --wm-scroll-away-hero-bg: Background color (default: --siteBackgroundColor)
+   --wm-scroll-away-hero-color: Base text color (default: --paragraphMediumColor)
+   --wm-scroll-away-hero-title-color: Title color (default: --headingExtraLargeColor)
+   --wm-scroll-away-hero-text-color: Body text color (default: --paragraphMediumColor)
+   --wm-scroll-away-hero-gap: Gap between stacked items (default: 1.5rem)
+   --wm-scroll-away-hero-padding: Content padding (default: 2rem)
+   --wm-scroll-away-hero-title-size: Title font size (default: clamp(2.5rem, 8vw, 6rem))
+   --wm-scroll-away-hero-title-weight: Title font weight (default: 700)
+   --wm-scroll-away-hero-text-size: Body font size (default: clamp(1.25rem, 4vw, 2rem))
+   --wm-scroll-away-hero-icon-size: Icon size (default: 32px)
+   --wm-scroll-away-hero-icon-color: Icon color (default: --paragraphMediumColor)
    --wm-scroll-away-hero-header-height: (Set by JS) Header height for scroll margin
    
    ============================================ */
