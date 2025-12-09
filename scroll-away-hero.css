@@ -1,6 +1,7 @@
 /* Base hero section styles */
 section.wm-scroll-away-hero-section.page-section[data-section-id],
 section.wm-scroll-away-hero-section.wm-scroll-away-hero-section--generated {
+  
   position: fixed;
   top: 0;
   left: 0;
@@ -10,6 +11,7 @@ section.wm-scroll-away-hero-section.wm-scroll-away-hero-section--generated {
   transition: opacity 0.3s ease, visibility 0.3s ease;
   opacity: 1;
   visibility: visible;
+  
 }
 
 /* Hidden state */
