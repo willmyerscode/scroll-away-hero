@@ -291,10 +291,18 @@
           return null;
 
         case "seo-title":
+          if (isItemPage) {
+            const itemSeoTitle = data.item?.seoData?.seoTitle || data.item?.seoTitle;
+            if (itemSeoTitle) return { type: "seo-title", value: itemSeoTitle };
+          }
           if (data.collection?.seoData?.seoTitle) return { type: "seo-title", value: data.collection.seoData.seoTitle };
           return null;
 
         case "seo-description":
+          if (isItemPage) {
+            const itemSeoDescription = data.item?.seoData?.seoDescription || data.item?.seoDescription;
+            if (itemSeoDescription) return { type: "seo-description", value: itemSeoDescription };
+          }
           if (data.collection?.seoData?.seoDescription) return { type: "seo-description", value: data.collection.seoData.seoDescription };
           return null;
 
