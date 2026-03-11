@@ -17,6 +17,7 @@
     sectionTheme: null, // null = inherit from header, or set custom theme
     showIcon: true,
     iconHtml: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+    appendTo: "#page",
   };
 
   const globalSettings = window.wmScrollAwayHeroSettings || {};
@@ -41,6 +42,7 @@
   if (ds.sectionTheme != null && ds.sectionTheme !== "") localSettings.sectionTheme = ds.sectionTheme;
   if (ds.showIcon != null && ds.showIcon !== "") localSettings.showIcon = String(ds.showIcon).toLowerCase() === "true";
   if (ds.iconHtml != null && ds.iconHtml !== "") localSettings.iconHtml = ds.iconHtml;
+  if (ds.appendTo) localSettings.appendTo = ds.appendTo;
 
   const config = Object.assign({}, defaults, globalSettings, localSettings);
 
@@ -86,7 +88,7 @@
   let isGeneratedSection = false;
   let contentWrapper = null;
   let originalParent = null;
-  let originalNextSibling = null;
+  let originalPreviousSibling = null;
 
   if (selectorKeyword) {
     // SYNC PATH: Use existing section from page
@@ -96,7 +98,7 @@
     
     // Store original position for restoring in edit mode
     originalParent = heroSection.parentElement;
-    originalNextSibling = heroSection.nextElementSibling;
+    originalPreviousSibling = heroSection.previousElementSibling;
   } else {
     // ASYNC PATH: Create placeholder hero section immediately (optimistic loading)
     heroSection = document.createElement("section");
@@ -111,7 +113,8 @@
 
   heroSection.classList.add("wm-scroll-away-hero-section");
   if (config.contentFill) heroSection.classList.add("content-fill");
-  page.append(heroSection);
+  const appendTarget = document.querySelector(config.appendTo) || page;
+  appendTarget.append(heroSection);
 
   // Header theme handling
   const headerEl = document.querySelector(config.headerSelector);
@@ -208,10 +211,10 @@
               heroSection.classList.remove("wm-scroll-away-hero-section", "wm-scroll-away-hero-section--hidden", "content-fill");
               heroSection.style.removeProperty("--wm-scroll-away-hero-header-height");
               
-              if (originalNextSibling) {
-                originalParent.insertBefore(heroSection, originalNextSibling);
+              if (originalPreviousSibling) {
+                originalPreviousSibling.after(heroSection);
               } else {
-                originalParent.appendChild(heroSection);
+                originalParent.prepend(heroSection);
               }
             }
             
