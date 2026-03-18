@@ -166,8 +166,9 @@
   const isInputFocused = () => {
     const ae = document.activeElement;
     if (!ae) return false;
+    if (!heroSection.contains(ae)) return false;
     if (ae.isContentEditable) return true;
-    const tag = ae.tagName;
+    const tag = ae.tagName; 
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
   };
 
