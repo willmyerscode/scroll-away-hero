@@ -55,10 +55,23 @@
   const page = document.querySelector("#page");
   if (!page) return;
 
-  // Preset selectors mapping
-  const presetSelectors = {
-    "last-section": "#sections > section:last-child",
-    "first-section": "#sections > section:first-child",
+  // Sections container: #sections (legacy DOM) or #page-regions (new DOM)
+  const getSectionsRoot = () => document.querySelector("#sections, #page-regions");
+
+  // .page-section is a direct child of #sections (legacy) or nested inside
+  // section.region within #page-regions (new DOM); querySelectorAll handles both.
+  const getPageSections = () => {
+    const root = getSectionsRoot();
+    return root ? Array.from(root.querySelectorAll(".page-section")) : [];
+  };
+
+  // Preset resolvers (DOM-structure agnostic)
+  const presetResolvers = {
+    "first-section": () => getPageSections()[0] || null,
+    "last-section": () => {
+      const sections = getPageSections();
+      return sections[sections.length - 1] || null;
+    },
   };
 
   // Check if a string is a CSS selector
@@ -80,7 +93,7 @@
   let selectorKeyword = null;
   if (contentKeywords) {
     selectorKeyword = contentKeywords.find((kw) => {
-      return presetSelectors[kw] || isSelector(kw);
+      return presetResolvers[kw] || isSelector(kw);
     });
   }
 
@@ -92,8 +105,9 @@
 
   if (selectorKeyword) {
     // SYNC PATH: Use existing section from page
-    const selector = presetSelectors[selectorKeyword] || selectorKeyword;
-    heroSection = document.querySelector(selector);
+    heroSection = presetResolvers[selectorKeyword]
+      ? presetResolvers[selectorKeyword]()
+      : document.querySelector(selectorKeyword);
     if (!heroSection) return; // Section not found, don't initialize
     
     // Store original position for restoring in edit mode
